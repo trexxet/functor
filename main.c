@@ -4,6 +4,8 @@
 #include "functree.h"
 #include "differentiate.h"
 #include "reduce.h"
+#include "functreeTex.h"
+
 extern FILE *yyin;
 extern int yyparse ();
 extern int yy_scan_string (char *);
@@ -17,6 +19,7 @@ void differentiateFunction ();
 
 ftree_node *srcFunc = NULL;
 int reduceOnly = 0;
+int texOut = 0;
 
 
 int main (int argc, char *argv[]) {
@@ -33,6 +36,11 @@ int main (int argc, char *argv[]) {
 	printf ("Reduction steps:\n");
 	printReductionSteps (&srcFunc);
 
+	if (texOut) {
+		ftree_writeTexFile ("source_tex.txt", srcFunc);
+		printf ("TeX'ed and reduced source function written to source_tex.txt\n");
+	}
+
 	if (!reduceOnly)
 		differentiateFunction (srcFunc);
 
@@ -46,7 +54,7 @@ int main (int argc, char *argv[]) {
 void parseCmdArgs (int argc, char *argv[], char** inputFilename) {
 	int opt;
 	opterr = 0;
-	while ((opt = getopt (argc, argv, "dr")) != -1)
+	while ((opt = getopt (argc, argv, "drt")) != -1)
 		switch (opt) {
 			case 'd':
 				reduceDebugging = 1;
@@ -54,9 +62,12 @@ void parseCmdArgs (int argc, char *argv[], char** inputFilename) {
 			case 'r':
 				reduceOnly = 1;
 				break;
+			case 't':
+				texOut = 1;
+				break;
 			case '?':
 			default:
-				fprintf (stderr, "Usage: differ <input file> [-dr]\n");
+				fprintf (stderr, "Usage: differ <input file> [-drt]\n");
 				exit (1);
 		}
 	*inputFilename = argv[optind];
@@ -97,6 +108,12 @@ void differentiateFunction () {
 
 	printf ("Reduction steps:\n");
 	printReductionSteps (&diffed);
+
+	if (texOut) {
+		ftree_writeTexFile ("differed_tex.txt", diffed);
+		printf ("TeX'ed and reduced differentiated function written to differed_tex.txt\n");
+	}
+
 	ftree_deleteNode (diffed);
 
 	printf ("differentiate() was called %d times\n", differentiateCalls);

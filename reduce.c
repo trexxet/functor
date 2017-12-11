@@ -287,28 +287,3 @@ void printReductionSteps (ftree_node **pnode) {
 	}
 }
 
-
-#undef OP
-#undef Lchild
-#undef Rchild
-#undef LLchild
-#undef LRchild
-#undef RLchild
-#undef RRchild
-#undef isNum
-#undef isNumVal
-#undef isFunc
-#undef isFuncOp
-#undef isSame
-#undef addNum
-#undef addFunc
-#undef copy
-#undef cpLchild
-#undef cpRchild
-#undef cpLLchild
-#undef cpLRchild
-#undef cpRLchild
-#undef cpRRchild
-#undef replaceFunc
-#undef replaceNum
-

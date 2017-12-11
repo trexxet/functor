@@ -1,5 +1,5 @@
-HEADERS = parser.tab.h functree.h differentiate.h reduce.h
-CSRC = main.c lex.yy.c parser.tab.c functree.c differentiate.c reduce.c
+HEADERS = parser.tab.h functree.h differentiate.h reduce.h functreeTex.h
+CSRC = main.c lex.yy.c parser.tab.c functree.c differentiate.c reduce.c functreeTex.c
 
 all: functor
 
