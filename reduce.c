@@ -315,6 +315,15 @@ static int reduceBasic (ftree_node **pnode) {
 }
 
 
+void printReductionSteps (ftree_node **pnode) {
+	while (reduce (pnode)) {
+		char *str = ftree_str (*pnode);
+		printf ("\t%s\n", str);
+		free (str);
+	}
+}
+
+
 #undef OP
 #undef Lchild
 #undef Rchild

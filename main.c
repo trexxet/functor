@@ -4,9 +4,15 @@
 #include "functree.h"
 #include "differentiate.h"
 #include "reduce.h"
+extern FILE *yyin;
+extern int yyparse ();
+extern int yy_scan_string (char *);
+extern int yylex_destroy ();
+
+#define MAX_STDIN_INPUT_LEN 1024
 
 void parseCmdArgs (int argc, char *argv[], char** inputFilename);
-void parseInput ();
+int parseInput (char *inputFilename);
 void differentiateFunction ();
 
 ftree_node *srcFunc = NULL;
@@ -17,31 +23,19 @@ int main (int argc, char *argv[]) {
 	char *inputFilename = NULL;
 	parseCmdArgs (argc, argv, &inputFilename);
 
-	// Parse input
-	extern FILE *yyin;
-	yyin = fopen (inputFilename, "r");
-	if (!yyin) {
-		fprintf (stderr, "Cannot open input file\n");
-		return 1;
-	}
-	parseInput ();
-	fclose (yyin);
+	if (parseInput (inputFilename) != 0)
+		return EXIT_FAILURE;
 
 	char *str = ftree_str (srcFunc);
 	printf ("Source function parsed to tree: \n\t%s\n", str);
 	free (str);
 
 	printf ("Reduction steps:\n");
-	while (reduce (&srcFunc)) {
-		str = ftree_str (srcFunc);
-		printf ("\t%s\n", str);
-		free (str);
-	}
+	printReductionSteps (&srcFunc);
 
 	if (!reduceOnly)
 		differentiateFunction (srcFunc);
 
-	extern int reduceCalls;
 	printf ("reduce() was called %d times\n", reduceCalls);
 
 	ftree_deleteNode (srcFunc);
@@ -50,7 +44,6 @@ int main (int argc, char *argv[]) {
 
 
 void parseCmdArgs (int argc, char *argv[], char** inputFilename) {
-	extern int reduceDebugging;
 	int opt;
 	opterr = 0;
 	while ((opt = getopt (argc, argv, "dr")) != -1)
@@ -70,17 +63,29 @@ void parseCmdArgs (int argc, char *argv[], char** inputFilename) {
 }
 
 
-void parseInput () {
-	extern int yyparse ();
-	extern FILE *yyin;
-
-	printf ("Source function:\n\t");
-	int chr = 0;
-	while ((chr = getc (yyin)) != EOF)
-		putchar (chr);
-	rewind (yyin);
-
-	do yyparse(); while (!feof (yyin));
+int parseInput (char *inputFilename) {
+	if (inputFilename) {
+		yyin = fopen (inputFilename, "r");
+		if (!yyin) {
+			fprintf (stderr, "Cannot open input file\n");
+			return 1;
+		}
+		printf ("Source function:\n\t");
+		int chr = 0;
+		while ((chr = getc (yyin)) != EOF)
+			putchar (chr);
+		rewind (yyin);
+		do yyparse(); while (!feof (yyin));
+		fclose (yyin);
+	}
+	else {
+		char inputStr[MAX_STDIN_INPUT_LEN] = {0};
+		fgets (inputStr, MAX_STDIN_INPUT_LEN, stdin);
+		yy_scan_string (inputStr);
+		yyparse ();
+		yylex_destroy ();
+	}
+	return 0;
 }
 
 
@@ -91,14 +96,9 @@ void differentiateFunction () {
 	free (str);
 
 	printf ("Reduction steps:\n");
-	while (reduce (&diffed)) {
-		str = ftree_str (diffed);
-		printf ("\t%s\n", str);
-		free (str);
-	}
+	printReductionSteps (&diffed);
 	ftree_deleteNode (diffed);
 
-	extern int differentiateCalls;
 	printf ("differentiate() was called %d times\n", differentiateCalls);
 }
 
