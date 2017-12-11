@@ -37,8 +37,9 @@ int main (int argc, char *argv[]) {
 	printReductionSteps (&srcFunc);
 
 	if (texOut) {
-		ftree_writeTexFile ("source_tex.txt", srcFunc);
-		printf ("TeX'ed and reduced source function written to source_tex.txt\n");
+		system ("mkdir -p tex");
+		ftree_writeTexFile ("tex/source.tex", srcFunc);
+		printf ("TeX'ed and reduced source function written to source.tex\n");
 	}
 
 	if (!reduceOnly)
@@ -110,8 +111,8 @@ void differentiateFunction () {
 	printReductionSteps (&diffed);
 
 	if (texOut) {
-		ftree_writeTexFile ("differed_tex.txt", diffed);
-		printf ("TeX'ed and reduced differentiated function written to differed_tex.txt\n");
+		ftree_writeTexFile ("tex/differed.tex", diffed);
+		printf ("TeX'ed and reduced differentiated function written to differed.tex\n");
 	}
 
 	ftree_deleteNode (diffed);

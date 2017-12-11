@@ -39,9 +39,21 @@ char* ftree_tex (ftree_node *node) {
 	}
 }
 
+
+char* ftree_texDoc (ftree_node *node) {
+	char *funcstr = ftree_tex (node);
+	char *str = NULL;
+	asprintf (&str, "\\documentclass{article}\n\\begin{document}\n\\[%s\\]\n\\end{document}", funcstr);
+	free (funcstr);
+	return str;
+}
+
+
 void ftree_writeTexFile (char *filename, ftree_node *node) {
 	FILE *tex = fopen (filename, "w");
-	fprintf (tex, "%s", ftree_tex (node));
+	char *str = ftree_texDoc (node);
+	fprintf (tex, "%s", str);
+	free (str);
 	fclose (tex);
 }
 
