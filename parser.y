@@ -1,18 +1,11 @@
 %{
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "functree.h"
-#include "differentiate.h"
-#include "reduce.h"
 
 extern int yylex();
-extern int yyparse();
-extern FILE *yyin;
+extern void yyerror (const char *msg);
 
-void yyerror (const char *msg);
-
-int reduceOnly = 0;
+extern ftree_node *srcFunc;
 %}
 
 %union {
@@ -44,40 +37,8 @@ int reduceOnly = 0;
 
 launch_EVA01: func T_EOF 
 	    { 
-	        char *str = ftree_str ($1);
-		printf ("Source function parsed to tree: \n\t%s\n", str);
-	        free (str);
-		
-		printf ("Reduction steps:\n");
-		while (reduce (&$1)) {
-			str = ftree_str ($1);
-			printf ("\t%s\n", str);
-			free (str);
-		}
-
-		if (!reduceOnly) {
-			ftree_node *diffed = differentiate ($1);
-			str = ftree_str (diffed);
-			printf ("Differentiated non-reduced function: \n\t%s\n", str);
-			free (str);
-			
-			printf ("Reduction steps:\n");
-			while (reduce (&diffed)) {
-				str = ftree_str (diffed);
-				printf ("\t%s\n", str);
-				free (str);
-			}
-			ftree_deleteNode (diffed);
-
-			extern int differentiateCalls;
-			printf ("differentiate() was called %d times\n", differentiateCalls);
-		}
-
-		extern int reduceCalls;
-		printf ("reduce() was called %d times\n", reduceCalls);
-
-	        ftree_deleteNode ($1);
-		exit(0);
+                srcFunc = $1;
+                return 0;
 	    };
 
 func: T_NUM                                      { $$ = ftree_addNumber($1); }
@@ -102,52 +63,4 @@ func: T_NUM                                      { $$ = ftree_addNumber($1); }
     ;
 
 %%
-
-
-void parseCmdArgs (int argc, char *argv[], char** inputFilename) {
-	extern int debugging;
-	int opt;
-	opterr = 0;
-	while ((opt = getopt (argc, argv, "dr")) != -1)
-		switch (opt) {
-			case 'd':
-				debugging = 1;
-				break;
-			case 'r':
-				reduceOnly = 1;
-				break;
-			case '?':
-			default:
-				fprintf (stderr, "Usage: differ <input file> [-dr]\n");
-				exit (1);
-		}
-	*inputFilename = argv[optind];
-}
-
-
-int main (int argc, char *argv[]) {
-	char *inputFilename = NULL;
-	parseCmdArgs (argc, argv, &inputFilename);
-
-	yyin = fopen (inputFilename, "r");
-	if (!yyin) {
-		fprintf (stderr, "Cannot open input file\n");
-		return 1;
-	}
-
-	printf ("Source function:\n\t");
-	int chr = 0;
-	while ((chr = getc (yyin)) != EOF)
-		putchar (chr);
-	rewind (yyin);
-
-	do {
-		yyparse();
-	} while (!feof(yyin));
-}
-
-void yyerror (const char * msg) {
-	fprintf (stderr, "Failure: %s\n", msg);
-	exit(1);
-}
 

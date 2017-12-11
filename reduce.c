@@ -34,11 +34,11 @@
 #define replaceFunc(_op, _l, _r) { ftree_replaceNodeFunction (pnode, addFunc(_op, _l, _r)); return 1; }
 
 
-int debugging = 0;
+int reduceDebugging = 0;
 int reduceCalls = 0;
 
 static void debug_printNode (ftree_node *node) {
-	if (!debugging)
+	if (!reduceDebugging)
 		return;
 	char *str = ftree_str (node);
 	if (node->type == FUNCTION)
@@ -48,7 +48,7 @@ static void debug_printNode (ftree_node *node) {
 	free (str);
 }
 
-#define dprintf(...) do { if (debugging) printf(__VA_ARGS__); } while (0)
+#define dprintf(...) do { if (reduceDebugging) printf(__VA_ARGS__); } while (0)
 
 static int reduceBasic(ftree_node **pnode);
 
