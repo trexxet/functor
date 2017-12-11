@@ -83,8 +83,8 @@ int parseInput (char *inputFilename) {
 		fgets (inputStr, MAX_STDIN_INPUT_LEN, stdin);
 		yy_scan_string (inputStr);
 		yyparse ();
-		yylex_destroy ();
 	}
+	yylex_destroy ();
 	return 0;
 }
 

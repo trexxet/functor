@@ -36,7 +36,7 @@ extern ftree_node *srcFunc;
 %%
 
 launch_EVA01: func T_EOF 
-	    { 
+	    {
                 srcFunc = $1;
                 return 0;
 	    };

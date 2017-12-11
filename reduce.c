@@ -50,8 +50,6 @@ static void debug_printNode (ftree_node *node) {
 
 #define dprintf(...) do { if (reduceDebugging) printf(__VA_ARGS__); } while (0)
 
-static int reduceBasic(ftree_node **pnode);
-
 
 int reduce (ftree_node **pnode) {
 	assert (pnode && *pnode && "Trying to reduce a NULL node");
@@ -68,27 +66,28 @@ int reduce (ftree_node **pnode) {
 		goto reduceSwapped;
 
 
-	/* Swap commutative operands */
-	dprintf ("Performing basic reduction...\n");
-	ftree_node *saveNode = copy (node);
-	while (reduceBasic(pnode));
-	node = *pnode;
-	dprintf ("Basic reduction result:");
-	if (isSame(node, saveNode))
-		dprintf (" Nothing changed lol\n");
-	else {
-		dprintf ("\n");
-		debug_printNode (node);
-	}
-	ftree_deleteNode (saveNode);
+	/* Basic reduction */
 
-
-	/* Basic arithmetic reduction */
-
-	// -(0) -> 0
+	// n + f -> f + n
+	if (OP("+") && isNum(Lchild) && !isNum(Rchild))
+		replaceFunc ("+", cpRchild, cpLchild);
+	// n - f -> -f + n
+	if (OP("-") && isNum(Lchild) && !isNum(Rchild))
+		replaceFunc ("+", addFunc ("-", NULL, cpRchild), cpLchild);
+	// f1 + -(f2) -> f1 - f2
+	if (OP("+") && isFuncOp(Rchild, "-") && !RLchild)
+		replaceFunc ("-", cpLchild, cpRRchild);
+	// -(n * f) -> (-n) * f
+	if (OP("-") && !Lchild && isFuncOp(Rchild, "*") && isNum(RLchild))
+		replaceFunc ("*", addNum (-RLchild->num), cpRRchild);
+	// f + (-n) -> f - n
+	if (OP("+") && isNum(Rchild) && (Rchild->num < 0))
+		replaceFunc ("-", cpLchild, addNum (-Rchild->num));
+	// -(n) -> -n
+	if (OP("-") && !Lchild && isNum(Rchild))
+		replaceNum (-Rchild->num);
 	// 0 * f -> 0
-	if ((OP("-") && !Lchild && isNumVal(Rchild, 0)) ||
-	    (OP("*") && isNumVal(Lchild, 0)))
+	if (OP("*") && isNumVal(Lchild, 0))
 		replaceNum (0);
 	// 1 * f -> f
 	if (OP("*") && isNumVal(Lchild, 1))
@@ -126,6 +125,11 @@ int reduce (ftree_node **pnode) {
 	// f / f -> 1
 	if (OP("/") && isSame(Lchild, Rchild))
 		replaceNum (1);
+	// f * n -> n * f
+	// (f1 / f2) * f3 -> f3 * (f1 / f2)
+	if ((OP("*") && isNum(Rchild) && !isNum(Lchild)) ||
+	    (OP("*") && isFuncOp(Lchild, "/")))
+		replaceFunc ("*", cpRchild, cpLchild);
 
 
 reduceSwapped:
@@ -181,9 +185,6 @@ reduceSwapped:
 		ftree_replaceNodeVariable (node);
 		return 1;
 	}
-	// f1 + -(f2) -> f1 - f2
-	if (OP("+") && isFuncOp(Rchild, "-") && !RLchild)
-		replaceFunc ("-", cpLchild, cpRRchild);
 	// f1 * (f2 / f3) -> (f1 * f2) / f3
 	if (OP("*") && isFuncOp(Rchild, "/"))
 		replaceFunc ("/", addFunc ("*", cpLchild, cpRLchild), cpRRchild);
@@ -274,43 +275,6 @@ reduceSwapped:
 	}
 	dprintf ("Going up to\n");
 	debug_printNode (*pnode);
-	return reducedLeft | reducedRight;
-}
-
-
-/* Swap commutative operands */
-static int reduceBasic (ftree_node **pnode) {
-	assert (pnode && *pnode && "Trying to basic reduce a NULL node");
-	ftree_node *node = *pnode;
-	
-	if (node->type != FUNCTION)
-		return 0;
-
-	// n + f -> f + n
-	if (OP("+") && isNum(Lchild) && !isNum(Rchild))
-		replaceFunc ("+", cpRchild, cpLchild);
-	// n - f -> -f + n
-	if (OP("-") && isNum(Lchild) && !isNum(Rchild))
-		replaceFunc ("+", addFunc ("-", NULL, cpRchild), cpLchild);
-	// -(n * f) -> (-n) * f
-	if (OP("-") && !Lchild && isFuncOp(Rchild, "*") && isNum(RLchild))
-		replaceFunc ("*", addNum (-RLchild->num), cpRRchild);
-	// f + (-n) -> f - n
-	if (OP("+") && isNum(Rchild) && (Rchild->num < 0))
-		replaceFunc ("-", cpLchild, addNum (-Rchild->num));
-	// f * n -> n * f
-	// (f1 / f2) * f3 -> f3 * (f1 / f2)
-	if ((OP("*") && isNum(Rchild) && !isNum(Lchild)) ||
-	    (OP("*") && isFuncOp(Lchild, "/")))
-		replaceFunc ("*", cpRchild, cpLchild);
-
-	/* Recursively continue swaping */
-
-	int reducedLeft = 0, reducedRight = 0;
-	if (Lchild)
-		reducedLeft = reduceBasic (&(Lchild));
-	if (Rchild)
-		reducedRight = reduceBasic (&(Rchild));
 	return reducedLeft | reducedRight;
 }
 
